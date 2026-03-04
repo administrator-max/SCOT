@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cargo Tracking</title>
+<title>SCOT - Shipment Control Tower</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -104,14 +104,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </head>
 <body>
 <div class="hdr"><div class="hdr-in">
-  <div class="brand"><div class="brand-ico">CT</div><div><h1>Cargo Tracking</h1><p>Data as of March 3, 2026</p></div></div>
+  <div class="brand"><div class="brand-ico">SC</div><div><h1>SCOT</h1><p>Shipment Control Tower · Data as of March 3, 2026</p></div></div>
   <div class="today" id="td"></div>
 </div></div>
 <div class="nav">
   <button class="nb act" data-tab="ongoing">In Progress <span class="pl" id="og-c"></span></button>
   <button class="nb" data-tab="done">Completed <span class="pl" id="dn-c"></span></button>
   <button class="nb" data-tab="stats">Statistics</button>
-  <button class="nb" data-tab="upload">Upload Data</button>
+  <button class="nb" data-tab="upload" style="background:#059669;color:white;border-color:#059669">Update & Export</button>
 </div>
 <div class="ct">
   <div id="p-ongoing">
@@ -134,8 +134,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="mg" id="mg"></div>
   </div>
   <div id="p-upload" class="hid">
-    <div class="upl" id="uz"><div style="font-size:36px;margin-bottom:8px">📎</div><p style="font-size:14px;font-weight:700;margin-bottom:4px">Select or drag & drop Excel file</p><p style="font-size:11px;color:var(--muted)">Column A–AF format must match database template (.xlsx)</p><input type="file" id="fi" accept=".xlsx,.xls" style="display:none"></div>
-    <div id="ur"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="ch-sec" style="cursor:pointer" id="tab-upd-og"><div style="text-align:center;padding:10px"><div style="font-size:28px;margin-bottom:6px">✏️</div><div style="font-size:13px;font-weight:700">Update On Going Shipment</div><div style="font-size:10px;color:var(--muted);margin-top:3px">Update status of active shipments</div></div></div>
+      <div class="ch-sec" style="cursor:pointer" id="tab-upd-new"><div style="text-align:center;padding:10px"><div style="font-size:28px;margin-bottom:6px">➕</div><div style="font-size:13px;font-weight:700">Add New Shipment</div><div style="font-size:10px;color:var(--muted);margin-top:3px">Register a new shipment entry</div></div></div>
+    </div>
+    <div id="frm-og" class="ch-sec hid" style="margin-bottom:16px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">✏️ Update On Going Shipment</h3>
+      <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--muted)">Select Shipment</label><select id="sel-og" class="sbox" style="margin-top:4px;width:100%"></select></div>
+      <div id="frm-og-fields"></div>
+      <div style="display:flex;gap:8px;margin-top:12px"><button class="abtn" id="btn-upd-og">💾 Save Update</button><button class="cbtn" id="btn-can-og">Cancel</button></div>
+    </div>
+    <div id="frm-new" class="ch-sec hid" style="margin-bottom:16px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">➕ Add New Shipment</h3>
+      <div id="frm-new-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:12px"><button class="abtn" id="btn-add-new">💾 Save New Shipment</button><button class="cbtn" id="btn-can-new">Cancel</button></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="ch-sec" style="cursor:pointer" id="tab-upl"><div style="text-align:center;padding:10px"><div style="font-size:28px;margin-bottom:6px">📎</div><div style="font-size:13px;font-weight:700">Upload Excel File</div><div style="font-size:10px;color:var(--muted);margin-top:3px">Bulk update from Excel template</div></div></div>
+      <div class="ch-sec" style="cursor:pointer" id="tab-exp"><div style="text-align:center;padding:10px"><div style="font-size:28px;margin-bottom:6px">📊</div><div style="font-size:13px;font-weight:700">Export to Excel</div><div style="font-size:10px;color:var(--muted);margin-top:3px">Download full database as .xlsx</div></div></div>
+    </div>
+    <div id="sec-upl" class="hid">
+      <div class="upl" id="uz"><div style="font-size:36px;margin-bottom:8px">📎</div><p style="font-size:14px;font-weight:700;margin-bottom:4px">Select or drag & drop Excel file</p><p style="font-size:11px;color:var(--muted)">Column A–AG format must match database template (.xlsx)</p><input type="file" id="fi" accept=".xlsx,.xls" style="display:none"></div>
+      <div id="ur"></div>
+    </div>
   </div>
 </div>
 <div class="ov hid" id="mo"><div class="mdl"><div class="mdl-t"><h3 id="mt"></h3><button class="mdl-x" id="mc">✕</button></div><div id="mb"></div></div></div>
@@ -248,7 +269,7 @@ let pnd=null;
 function pF(file){if(!file.name.match(/\.xlsx?$/i)){tst("Format must be .xlsx","er");return;}const rd=new FileReader();rd.onload=function(e){try{const wb=XLSX.read(e.target.result,{type:"array",cellDates:true});const nw=[],up=[],sk=[];wb.SheetNames.forEach(sn=>{if(!sn.toLowerCase().includes("analyze"))return;const ws=wb.Sheets[sn];const j=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:"yyyy-mm-dd"});let sr=0;for(let i=0;i<Math.min(5,j.length);i++){if(String(j[i]?.[0]||"").toLowerCase().startsWith("no")){sr=i+1;break;}}for(let i=sr;i<j.length;i++){const row=j[i];if(!row||!row[0]||String(row[0]).toLowerCase()==="no.")continue;const rec=pR(row);if(!rec.project_name)continue;const rf=rec.eta||rec.etd||rec.start_delivery;rec.year=rf?parseInt(rf.substring(0,4)):new Date().getFullYear();const mi=fM(rec);if(mi>=0){let ch=false;FM.forEach(k=>{if(k==="no")return;if((rec[k]||"")!==(D[mi][k]||"")&&!(rec[k]==null&&D[mi][k]==null))ch=true;});if(ch)up.push({rec,mi});else sk.push(rec);}else nw.push(rec);}});pnd={nw,up,sk};sPv(nw,up,sk);}catch(err){tst("Failed: "+err.message,"er");}};rd.readAsArrayBuffer(file);}
 function sPv(nw,up,sk){const el=document.getElementById("ur");el.innerHTML='<div class="upl-r"><h4 style="font-size:14px;font-weight:700;margin-bottom:10px">Parse Results</h4><div class="upl-s"><div class="upl-ch nw">🆕 '+nw.length+' New</div><div class="upl-ch up">🔄 '+up.length+' Updates</div><div class="upl-ch sk">⏭️ '+sk.length+' Unchanged</div></div>'+(nw.length||up.length?'<table class="upl-tb"><tr><th></th><th>Project</th><th>Product</th><th>Qty</th><th>Status</th><th>Action</th></tr>'+nw.map(r=>'<tr><td>🆕</td><td>'+r.project_name+'</td><td>'+(r.product||"-")+'</td><td>'+fN(r.quantity_mt)+'</td><td>'+(r.status||"-")+'</td><td style="color:var(--grn);font-weight:700">Add</td></tr>').join("")+up.map(u=>'<tr><td>🔄</td><td>'+u.rec.project_name+'</td><td>'+(u.rec.product||"-")+'</td><td>'+fN(u.rec.quantity_mt)+'</td><td>'+(u.rec.status||"-")+'</td><td style="color:var(--pri);font-weight:700">Update</td></tr>').join("")+'</table><div style="display:flex;gap:8px;margin-top:12px"><button class="abtn" id="ba">Apply '+(nw.length+up.length)+' Changes</button><button class="cbtn" id="bc">Cancel</button></div>':'<p style="color:var(--muted);font-size:12px">No changes detected.</p><button class="cbtn" id="bc" style="margin-top:10px">OK</button>')+'</div>';
 document.getElementById("bc")?.addEventListener("click",()=>{el.innerHTML="";pnd=null;fi.value="";});document.getElementById("ba")?.addEventListener("click",aC);}
-function aC(){if(!pnd)return;let a=0,u=0;pnd.up.forEach(x=>{FM.forEach(k=>{if(k!=="no"&&x.rec[k]!=null)D[x.mi][k]=x.rec[k];});if(x.rec.year)D[x.mi].year=x.rec.year;u++;});pnd.nw.forEach(r=>{const c={};Object.keys(r).forEach(k=>{if(r[k]!=null)c[k]=r[k];});D.push(c);a++;});LU=new Date().toISOString().substring(0,10);document.getElementById("lu-date").textContent=fD(LU);ref();rOg();rDn();tst("✅ "+a+" added, "+u+" updated","ok");document.getElementById("ur").innerHTML="";pnd=null;fi.value="";}
+function aC(){if(!pnd)return;let a=0,u=0;pnd.up.forEach(x=>{FM.forEach(k=>{if(k!=="no"&&x.rec[k]!=null)D[x.mi][k]=x.rec[k];});if(x.rec.year)D[x.mi].year=x.rec.year;u++;});pnd.nw.forEach(r=>{const c={};Object.keys(r).forEach(k=>{if(r[k]!=null)c[k]=r[k];});D.push(c);a++;});updLU();ref();rOg();rDn();tst("✅ "+a+" added, "+u+" updated","ok");document.getElementById("ur").innerHTML="";pnd=null;fi.value="";}
 function tst(msg,type){const t=document.createElement("div");t.className="tst "+type;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500);}
 // CHAT
 // Offline AI Chat Engine - pattern matching + data computation
@@ -537,6 +558,180 @@ cI.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefa
 function sC(){const m=cI.value.trim();if(!m)return;cI.value="";document.getElementById("chs").classList.add("hid");const u=document.createElement("div");u.className="bbl u";u.textContent=m;cM.appendChild(u);const a=document.createElement("div");a.className="bbl a";a.innerHTML='<span class="thk">Analyzing...</span>';cM.appendChild(a);cM.scrollTop=cM.scrollHeight;setTimeout(()=>{a.innerHTML=aiR(m);cM.scrollTop=cM.scrollHeight;},300+Math.random()*400);}
 
 
+// Field definitions for forms
+var FLDS=[
+{k:"cargo_type",l:"Cargo Type",t:"sel",o:["Import","Domestic"]},
+{k:"project_name",l:"Project Name",t:"txt"},
+{k:"product",l:"Product",t:"txt"},
+{k:"quantity_mt",l:"Quantity (MT)",t:"num"},
+{k:"bl_number",l:"BL Number",t:"txt"},
+{k:"shipping_line",l:"Shipping Line",t:"txt"},
+{k:"vessel_name",l:"Vessel Name",t:"txt"},
+{k:"voyage_number",l:"Voyage Number",t:"txt"},
+{k:"pol",l:"Port of Loading",t:"txt"},
+{k:"pod",l:"Port of Discharge",t:"txt"},
+{k:"shipment_route",l:"Shipment Route",t:"sel",o:["Direct","Transit"]},
+{k:"etd",l:"ETD",t:"date"},
+{k:"eta",l:"ETA",t:"date"},
+{k:"shipment_type",l:"Shipment Type",t:"sel",o:["Breakbulk","Container"]},
+{k:"est_sailing_days",l:"Est Sailing (days)",t:"num"},
+{k:"actual_sailing_days",l:"Act Sailing (days)",t:"num"},
+{k:"pib_billing",l:"PIB Billing",t:"date"},
+{k:"bpn",l:"BPN",t:"date"},
+{k:"spjm",l:"SPJM",t:"date"},
+{k:"behandle",l:"Behandle",t:"date"},
+{k:"sppb",l:"SPPB",t:"date"},
+{k:"clearance_days",l:"Clearance (days)",t:"num"},
+{k:"start_unloading",l:"Start Unloading",t:"date"},
+{k:"finish_unloading",l:"Finish Unloading",t:"date"},
+{k:"unloading_days",l:"Unloading (days)",t:"num"},
+{k:"cargo_status",l:"Cargo Status",t:"sel",o:["Direct","Via Warehouse","Storage"]},
+{k:"start_delivery",l:"Start Delivery",t:"date"},
+{k:"enter_warehouse",l:"Enter Warehouse",t:"date"},
+{k:"delivery_days",l:"Delivery (days)",t:"num"},
+{k:"vendor_trucking",l:"Vendor Trucking",t:"txt"},
+{k:"warehouse_location",l:"Warehouse Location",t:"txt"},
+{k:"status",l:"Status",t:"sel",o:["On Going","Done"]}
+];
+
+function mkInput(f,val){
+  var v=val||"";
+  if(f.t==="sel"){var opts=f.o.map(function(o){return'<option value="'+o+'"'+(v===o?' selected':'')+'>'+o+'</option>';}).join("");return'<select class="sbox" data-fk="'+f.k+'" style="width:100%;padding:7px 10px"><option value="">-</option>'+opts+'</select>';}
+  if(f.t==="date")return'<input type="date" class="sbox" data-fk="'+f.k+'" value="'+v+'" style="width:100%;padding:7px 10px">';
+  if(f.t==="num")return'<input type="number" step="any" class="sbox" data-fk="'+f.k+'" value="'+v+'" style="width:100%;padding:7px 10px">';
+  return'<input type="text" class="sbox" data-fk="'+f.k+'" value="'+v+'" style="width:100%;padding:7px 10px">';
+}
+
+function mkField(f,val){return'<div style="margin-bottom:6px"><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">'+f.l+'</label>'+mkInput(f,val)+'</div>';}
+
+function updLU(){
+  var now=new Date();
+  LU=now.toISOString().substring(0,10);
+  var h2=String(now.getHours()).padStart(2,'0');
+  var m2=String(now.getMinutes()).padStart(2,'0');
+  var luStr=fD(LU)+' '+h2+':'+m2;
+  document.getElementById('lu-date').textContent=luStr;
+}
+
+// Tab toggles
+document.getElementById('tab-upd-og').addEventListener('click',function(){
+  document.getElementById('frm-og').classList.toggle('hid');
+  document.getElementById('frm-new').classList.add('hid');
+  document.getElementById('sec-upl').classList.add('hid');
+  // Populate select with ongoing shipments
+  var sel=document.getElementById('sel-og');
+  sel.innerHTML='<option value="">-- Select --</option>';
+  ogI.forEach(function(d){sel.innerHTML+='<option value="'+d._id+'">'+d.project_name+' ('+d.product+')</option>';});
+  document.getElementById('frm-og-fields').innerHTML='';
+});
+document.getElementById('tab-upd-new').addEventListener('click',function(){
+  document.getElementById('frm-new').classList.toggle('hid');
+  document.getElementById('frm-og').classList.add('hid');
+  document.getElementById('sec-upl').classList.add('hid');
+  // Build new shipment form
+  var el=document.getElementById('frm-new-fields');
+  el.innerHTML=FLDS.map(function(f){return mkField(f,'');}).join('');
+});
+document.getElementById('tab-upl').addEventListener('click',function(){
+  document.getElementById('sec-upl').classList.toggle('hid');
+  document.getElementById('frm-og').classList.add('hid');
+  document.getElementById('frm-new').classList.add('hid');
+});
+
+// Show fields when selecting ongoing shipment
+document.getElementById('sel-og').addEventListener('change',function(){
+  var id=+this.value;
+  var d=it.find(function(x){return x._id===id;});
+  if(!d){document.getElementById('frm-og-fields').innerHTML='';return;}
+  var html=FLDS.map(function(f){
+    var val=d[f.k];
+    if(val==null)val='';
+    if(f.t==='num'&&val)val=String(val);
+    return mkField(f,String(val));
+  }).join('');
+  document.getElementById('frm-og-fields').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+html+'</div>';
+});
+
+// Save update on going
+document.getElementById('btn-upd-og').addEventListener('click',function(){
+  var id=+document.getElementById('sel-og').value;
+  if(!id&&id!==0){tst('Select a shipment first','er');return;}
+  var idx=D.findIndex(function(d,i){return i===id||d._id===id;});
+  // Get from the original data index
+  var rec=it.find(function(x){return x._id===id;});
+  if(!rec){tst('Shipment not found','er');return;}
+  // Find in D array
+  var dIdx=-1;
+  for(var i=0;i<D.length;i++){
+    if(D[i].project_name===rec.project_name&&D[i].cargo_type===rec.cargo_type&&(D[i].bl_number||'')===(rec.bl_number||'')){dIdx=i;break;}
+  }
+  if(dIdx<0){tst('Record not found in database','er');return;}
+  var fields=document.querySelectorAll('#frm-og-fields [data-fk]');
+  fields.forEach(function(el){
+    var k=el.dataset.fk,v=el.value;
+    if(!v||v==='-'){D[dIdx][k]=null;}
+    else if(el.type==='number'){D[dIdx][k]=parseFloat(v)||null;}
+    else{D[dIdx][k]=v;}
+  });
+  var rf=D[dIdx].eta||D[dIdx].etd||D[dIdx].start_delivery;
+  D[dIdx].year=rf?parseInt(rf.substring(0,4)):new Date().getFullYear();
+  updLU();ref();rOg();rDn();
+  document.getElementById('frm-og').classList.add('hid');
+  tst('Shipment updated successfully','ok');
+});
+document.getElementById('btn-can-og').addEventListener('click',function(){document.getElementById('frm-og').classList.add('hid');});
+
+// Add new shipment
+document.getElementById('btn-add-new').addEventListener('click',function(){
+  var fields=document.querySelectorAll('#frm-new-fields [data-fk]');
+  var rec={};
+  var hasName=false;
+  fields.forEach(function(el){
+    var k=el.dataset.fk,v=el.value;
+    if(k==='project_name'&&v)hasName=true;
+    if(!v||v==='-')return;
+    if(el.type==='number'){rec[k]=parseFloat(v)||null;}
+    else{rec[k]=v;}
+  });
+  if(!hasName){tst('Project Name is required','er');return;}
+  rec.no=D.length+1;
+  var rf=rec.eta||rec.etd||rec.start_delivery;
+  rec.year=rf?parseInt(rf.substring(0,4)):new Date().getFullYear();
+  if(!rec.status)rec.status='On Going';
+  D.push(rec);
+  updLU();ref();rOg();rDn();
+  document.getElementById('frm-new').classList.add('hid');
+  tst('New shipment added successfully','ok');
+});
+document.getElementById('btn-can-new').addEventListener('click',function(){document.getElementById('frm-new').classList.add('hid');});
+
+// Export to Excel
+document.getElementById('tab-exp').addEventListener('click',function(){
+  var hdrs=['No','Cargo Type','Project Name','Product','Quantity (MT)','BL Number','Shipping Line','Vessel Name','Voyage Number','POL','POD','Shipment Route','ETD','ETA','Shipment Type','Est Sailing (Day)','Act Sailing (Day)','PIB Billing','BPN','SPJM','Behandle','SPPB','Clearance (Day)','Start Unloading','Finish Unloading','Unloading (Day)','Cargo Status','Start Delivery','Enter Warehouse','Delivery (Day)','Vendor Trucking','Warehouse Location','Status'];
+  var keys=['no','cargo_type','project_name','product','quantity_mt','bl_number','shipping_line','vessel_name','voyage_number','pol','pod','shipment_route','etd','eta','shipment_type','est_sailing_days','actual_sailing_days','pib_billing','bpn','spjm','behandle','sppb','clearance_days','start_unloading','finish_unloading','unloading_days','cargo_status','start_delivery','enter_warehouse','delivery_days','vendor_trucking','warehouse_location','status'];
+  var wb=XLSX.utils.book_new();
+  var wsData=[hdrs];
+  D.forEach(function(d,i){
+    wsData.push(keys.map(function(k,ki){
+      if(k==='no')return i+1;
+      var v=d[k];
+      return v!=null?v:'';
+    }));
+  });
+  var ws=XLSX.utils.aoa_to_sheet(wsData);
+  // Column widths
+  ws['!cols']=hdrs.map(function(h,i){
+    if(i===2||i===3)return{wch:25};
+    if(i===5||i===7)return{wch:20};
+    if(i===9||i===10||i===31)return{wch:20};
+    if(i===0||i>=15&&i<=25)return{wch:12};
+    return{wch:16};
+  });
+  XLSX.utils.book_append_sheet(wb,ws,'Shipment Database');
+  XLSX.writeFile(wb,'SCOT_Database_'+LU+'.xlsx');
+  tst('Excel exported: SCOT_Database_'+LU+'.xlsx','ok');
+});
+
 // Save dashboard with current data
 document.getElementById("dl-btn").addEventListener("click",function(){
   var src=document.documentElement.outerHTML;
@@ -554,7 +749,7 @@ document.getElementById("dl-btn").addEventListener("click",function(){
   var b=new Blob(['<!DOCTYPE html>\n<html lang="en">'+src.substring(src.indexOf('<head'))],{type:'text/html'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(b);
-  a.download='cargo-tracking-'+LU+'.html';
+  a.download='SCOT-dashboard-'+LU+'.html';
   a.click();
   URL.revokeObjectURL(a.href);
   tst('Dashboard saved with latest data','ok');
